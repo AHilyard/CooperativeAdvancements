@@ -1,0 +1,24 @@
+modLoader="javafml"
+loaderVersion="[28,)"
+
+[[mods]]
+modId="cooperativeadvancements"
+version="${file.jarVersion}"
+displayName="Cooperative Advancements"
+displayURL="http://example.com/"
+logoFile="icon.png"
+authors="Grend"
+description='''A simple mod to share advancements between all players on a server.'''
+
+[[dependencies.cooperativeadvancements]]
+    modId="forge"
+    mandatory=true
+    versionRange="[28,)"
+    ordering="NONE"
+    side="SERVER"
+[[dependencies.cooperativeadvancements]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.14.4]"
+    ordering="NONE"
+    side="SERVER"
