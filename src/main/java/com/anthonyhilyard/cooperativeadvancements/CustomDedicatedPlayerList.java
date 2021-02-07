@@ -8,22 +8,16 @@ import java.util.Map;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.dedicated.DedicatedPlayerList;
-import net.minecraft.util.registry.DynamicRegistries.Impl;
-import net.minecraft.world.storage.PlayerData;
 import net.minecraft.advancements.PlayerAdvancements;
-import net.minecraft.world.storage.FolderName;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import net.minecraft.world.dimension.DimensionType;
 
 public class CustomDedicatedPlayerList extends DedicatedPlayerList
 {
-	private static final Logger LOGGER = LogManager.getLogger();
-
 	private DedicatedServer server;
 
-	public CustomDedicatedPlayerList(DedicatedServer server, Impl p_i231425_2_, PlayerData p_i231425_3_)
+	public CustomDedicatedPlayerList(DedicatedServer server)
 	{
-		super(server, p_i231425_2_, p_i231425_3_);
+		super(server);
 		this.server = server;
 	}
 
@@ -43,14 +37,12 @@ public class CustomDedicatedPlayerList extends DedicatedPlayerList
 			if (playeradvancements == null)
 			{
 				// Create an instance of our custom class.
-				File file1 = this.server.func_240776_a_(FolderName.ADVANCEMENTS).toFile();
+				File file1 = new File(this.server.getWorld(DimensionType.OVERWORLD).getSaveHandler().getWorldDirectory(), "advancements");
 				File file2 = new File(file1, uuid + ".json");
-				playeradvancements = new CustomPlayerAdvancements(this.server.getDataFixer(), this, this.server.getAdvancementManager(), file2, player);
+				playeradvancements = new CustomPlayerAdvancements(this.server, file2, player);
 				advancements.put(uuid, playeradvancements);
 			}
 
-			// Forge: don't overwrite active player with a fake one.
-			if (!(player instanceof net.minecraftforge.common.util.FakePlayer))
 			playeradvancements.setPlayer(player);
 			return playeradvancements;
 		}

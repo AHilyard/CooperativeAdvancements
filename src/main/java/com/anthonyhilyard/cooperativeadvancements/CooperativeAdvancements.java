@@ -7,7 +7,6 @@ import java.util.List;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.registry.DynamicRegistries;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
@@ -18,7 +17,6 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.server.FMLServerAboutToStartEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraft.server.dedicated.DedicatedServer;
-import net.minecraft.world.storage.PlayerData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,31 +38,15 @@ public class CooperativeAdvancements
 	public void onServerAboutToStart(FMLServerAboutToStartEvent event)
 	{
 		SERVER = event.getServer();
-		try
+
+		if (SERVER.isDedicatedServer())
 		{
-			// Use reflection to access some private fields in the server to hack in our custom player list.
-			Field dynamicRegistriesField = SERVER.getClass().getSuperclass().getDeclaredField("field_240767_f_");
-			dynamicRegistriesField.setAccessible(true);
-			DynamicRegistries.Impl registries = (DynamicRegistries.Impl) dynamicRegistriesField.get(SERVER);
-
-			Field playerDataManagerField = SERVER.getClass().getSuperclass().getDeclaredField("playerDataManager");
-			playerDataManagerField.setAccessible(true);
-			PlayerData playerDataManager = (PlayerData) playerDataManagerField.get(SERVER);
-
-			if (SERVER.isDedicatedServer())
-			{
-				// Replace the current player list with our new one.
-				SERVER.setPlayerList(new CustomDedicatedPlayerList((DedicatedServer) SERVER, registries, playerDataManager));
-			}
-			else
-			{
-				DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> StartupClientOnly.clientSetup(SERVER));
-			}
+			// Replace the current player list with our new one.
+			SERVER.setPlayerList(new CustomDedicatedPlayerList((DedicatedServer) SERVER));
 		}
-		catch (NoSuchFieldException|IllegalAccessException e)
+		else
 		{
-			LOGGER.error(e.toString());
-			event.setResult(Result.DENY);
+			DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> StartupClientOnly.clientSetup(SERVER));
 		}
 	}
 
