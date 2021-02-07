@@ -1,27 +1,34 @@
 package com.anthonyhilyard.cooperativeadvancements;
 
+import java.lang.reflect.Field;
+import java.util.Collection;
+import java.util.List;
+
 import net.minecraft.advancements.Advancement;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.registry.DynamicRegistries;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.player.AdvancementEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.eventbus.api.Event.Result;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
-
+import net.minecraftforge.fml.event.server.FMLServerAboutToStartEvent;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraft.server.dedicated.DedicatedServer;
+import net.minecraft.world.storage.PlayerData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collection;
-import java.util.List;
 
 @Mod("cooperativeadvancements")
 public class CooperativeAdvancements
 {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static MinecraftServer SERVER;
+	public static IEventBus MOD_EVENT_BUS;
 
 	public CooperativeAdvancements()
 	{
@@ -30,66 +37,94 @@ public class CooperativeAdvancements
 	}
 
 	@SubscribeEvent
-	public void onServerStarting(FMLServerStartingEvent event)
+	public void onServerAboutToStart(FMLServerAboutToStartEvent event)
 	{
 		SERVER = event.getServer();
+		try
+		{
+			// Use reflection to access some private fields in the server to hack in our custom player list.
+			Field dynamicRegistriesField = SERVER.getClass().getSuperclass().getDeclaredField("field_240767_f_");
+			dynamicRegistriesField.setAccessible(true);
+			DynamicRegistries.Impl registries = (DynamicRegistries.Impl) dynamicRegistriesField.get(SERVER);
+
+			Field playerDataManagerField = SERVER.getClass().getSuperclass().getDeclaredField("playerDataManager");
+			playerDataManagerField.setAccessible(true);
+			PlayerData playerDataManager = (PlayerData) playerDataManagerField.get(SERVER);
+
+			if (SERVER.isDedicatedServer())
+			{
+				// Replace the current player list with our new one.
+				SERVER.setPlayerList(new CustomDedicatedPlayerList((DedicatedServer) SERVER, registries, playerDataManager));
+			}
+			else
+			{
+				DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> StartupClientOnly.clientSetup(SERVER));
+			}
+		}
+		catch (NoSuchFieldException|IllegalAccessException e)
+		{
+			LOGGER.error(e.toString());
+			event.setResult(Result.DENY);
+		}
+	}
+
+	public static void registerClientOnlyEvents()
+	{
+		MOD_EVENT_BUS.register(StartupClientOnly.class);
 	}
 
 	/**
-	 * Synchronizes the advancements of two players.
+	 * Synchronizes the criteria of advancements for two players.
 	 * @param first The first player.
 	 * @param second The second player.
 	 */
-	public static void syncAdvancements(ServerPlayerEntity first, ServerPlayerEntity second)
+	public static void syncCriteria(ServerPlayerEntity first, ServerPlayerEntity second)
 	{
 		Collection<Advancement> allAdvancements = SERVER.getAdvancementManager().getAllAdvancements();
 
 		// Loop through every possible advancement.
 		for (Advancement advancement : allAdvancements)
 		{
-			// If the first player has completed this advancement and the second hasn't, grant it to the second.
-			if (first.getAdvancements().getProgress(advancement).isDone() && !second.getAdvancements().getProgress(advancement).isDone())
+			for (String criterion : advancement.getCriteria().keySet())
 			{
-				grantAdvancement(second, advancement);
-			}
-			// Conversely, if the first hasn't completed it and the second has, grant it to the first.
-			else if (!first.getAdvancements().getProgress(advancement).isDone() && second.getAdvancements().getProgress(advancement).isDone())
-			{
-				grantAdvancement(first, advancement);
+				// We know these iterables are actually lists, so just cast them.
+				List<String> firstCompleted = (List<String>) first.getAdvancements().getProgress(advancement).getCompletedCriteria();
+				List<String> secondCompleted = (List<String>) second.getAdvancements().getProgress(advancement).getCompletedCriteria();
+
+				// If the first player has completed this criteria and the second hasn't, grant it to the second.
+				if (firstCompleted.contains(criterion) && !secondCompleted.contains(criterion))
+				{
+					second.getAdvancements().grantCriterion(advancement, criterion);
+				}
+				// Conversely, if the first hasn't completed it and the second has, grant it to the first.
+				else if (!firstCompleted.contains(criterion) && secondCompleted.contains(criterion))
+				{
+					first.getAdvancements().grantCriterion(advancement, criterion);
+				}
 			}
 		}
 	}
 
-	/**
-	 * Grants an advancement to a player.
-	 * @param player The player.
-	 * @param advancement The advancement.
-	 */
-	public static void grantAdvancement(ServerPlayerEntity player, Advancement advancement)
-	{
-		for (String criterion : advancement.getCriteria().keySet())
-		{
-			player.getAdvancements().grantCriterion(advancement, criterion);
-		}
-	}
+
 
 	@Mod.EventBusSubscriber(bus=Mod.EventBusSubscriber.Bus.FORGE)
 	public static class AdvancementEvents
 	{
 		/**
-		 * Tries to grant an advancement to all players whenever a player gains a new one.
+		 * Tries to grant a criterion for an advancement to all players whenever a player gains a new one.
 		 */
 		@SubscribeEvent
-		public static void onAdvancement(final AdvancementEvent event)
+		public static void onCriterion(final CriterionEvent event)
 		{
 			List<ServerPlayerEntity> currentPlayers = SERVER.getPlayerList().getPlayers();
 			Advancement advancement = event.getAdvancement();
+			String criterion = event.getCriterionKey();
 
 			for (ServerPlayerEntity player : currentPlayers)
 			{
 				if (event.getPlayer() != player)
 				{
-					grantAdvancement(player, advancement);
+					player.getAdvancements().grantCriterion(advancement, criterion);
 				}
 			}
 			event.setResult(Result.ALLOW);
@@ -110,7 +145,7 @@ public class CooperativeAdvancements
 			{
 				if (newPlayer != player)
 				{
-					syncAdvancements(newPlayer, player);
+					syncCriteria(newPlayer, player);
 				}
 			}
 			event.setResult(Result.ALLOW);

@@ -4,7 +4,7 @@ license="MIT"
 
 [[mods]]
 modId="cooperativeadvancements"
-version="${file.jarVersion}"
+version="1.1"
 displayName="Cooperative Advancements"
 displayURL="http://anthonyhilyard.com/"
 logoFile="icon.png"
