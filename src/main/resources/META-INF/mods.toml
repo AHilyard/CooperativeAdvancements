@@ -4,22 +4,31 @@ license="MIT"
 
 [[mods]]
 modId="cooperativeadvancements"
-version="1.1"
+version="${file.jarVersion}"
 displayName="Cooperative Advancements"
-displayURL="http://anthonyhilyard.com/"
+displayURL="https://anthonyhilyard.com/"
+updateJSONURL="https://mc-curse-update-checker.herokuapp.com/352568"
 logoFile="icon.png"
 authors="Grend"
 description='''A simple mod to share advancements between all players on a server.'''
 
 [[dependencies.cooperativeadvancements]]
-    modId="forge"
-    mandatory=true
-    versionRange="[36,)"
-    ordering="NONE"
-    side="SERVER"
+	modId="forge"
+	mandatory=true
+	versionRange="[36,)"
+	ordering="NONE"
+	side="SERVER"
+
 [[dependencies.cooperativeadvancements]]
-    modId="minecraft"
-    mandatory=true
-    versionRange="[1.16.5]"
-    ordering="NONE"
-    side="SERVER"
+	modId="minecraft"
+	mandatory=true
+	versionRange="[1.16.5]"
+	ordering="NONE"
+	side="SERVER"
+
+[[dependencies.cooperativeadvancements]]
+	modId="iceberg"
+	mandatory=true
+	versionRange="[1.0.3,)"
+	ordering="NONE"
+	side="BOTH"

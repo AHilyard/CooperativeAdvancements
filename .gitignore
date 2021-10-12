@@ -13,6 +13,7 @@ build
 
 # other
 run
+logs
 
 # Files from Forge MDK
 forge*changelog.txt
