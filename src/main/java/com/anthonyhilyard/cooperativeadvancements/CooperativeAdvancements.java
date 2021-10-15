@@ -6,20 +6,18 @@ import java.util.List;
 import com.anthonyhilyard.iceberg.events.CriterionEvent;
 
 import net.minecraft.advancements.Advancement;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.eventbus.api.Event.Result;
-import net.minecraftforge.fml.ExtensionPoint;
+import net.minecraftforge.fml.IExtensionPoint;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.server.FMLServerAboutToStartEvent;
+import net.minecraftforge.fmlserverevents.FMLServerAboutToStartEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.network.FMLNetworkConstants;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,7 +34,7 @@ public class CooperativeAdvancements
 	{
 		// Register ourselves for server and other game events we are interested in.
 		MinecraftForge.EVENT_BUS.register(this);
-		ModLoadingContext.get().registerExtensionPoint(ExtensionPoint.DISPLAYTEST, () -> Pair.of(() -> FMLNetworkConstants.IGNORESERVERONLY, (a, b) -> true));
+		ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> "ANY", (remote, isServer) -> true));
 	}
 
 	@SubscribeEvent
@@ -50,7 +48,7 @@ public class CooperativeAdvancements
 	 * @param first The first player.
 	 * @param second The second player.
 	 */
-	public static void syncCriteria(ServerPlayerEntity first, ServerPlayerEntity second)
+	public static void syncCriteria(ServerPlayer first, ServerPlayer second)
 	{
 		Collection<Advancement> allAdvancements = SERVER.getAdvancements().getAllAdvancements();
 
@@ -87,11 +85,11 @@ public class CooperativeAdvancements
 		@SubscribeEvent
 		public static void onCriterion(final CriterionEvent event)
 		{
-			List<ServerPlayerEntity> currentPlayers = SERVER.getPlayerList().getPlayers();
+			List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
 			Advancement advancement = event.getAdvancement();
 			String criterion = event.getCriterionKey();
 
-			for (ServerPlayerEntity player : currentPlayers)
+			for (ServerPlayer player : currentPlayers)
 			{
 				if (event.getPlayer() != player)
 				{
@@ -108,11 +106,11 @@ public class CooperativeAdvancements
 		@SubscribeEvent
 		public static void onPlayerLogIn(final PlayerLoggedInEvent event)
 		{
-			List<ServerPlayerEntity> currentPlayers = SERVER.getPlayerList().getPlayers();
-			ServerPlayerEntity newPlayer = (ServerPlayerEntity)event.getPlayer();
+			List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
+			ServerPlayer newPlayer = (ServerPlayer)event.getPlayer();
 
 			// Loop through all the currently-connected players and synchronize their advancements.
-			for (ServerPlayerEntity player : currentPlayers)
+			for (ServerPlayer player : currentPlayers)
 			{
 				if (newPlayer != player)
 				{

@@ -4,7 +4,7 @@ buildscript {
 		mavenCentral()
 	}
 	dependencies {
-		classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
+		classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
 	}
 }
 
@@ -12,13 +12,14 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 
 archivesBaseName = name + '-' + project.mcVersion
-sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(16)
 
 minecraft {
 	mappings channel: 'official', version: project.mcVersion
 	runs {
 		server = {
-			properties 'forge.logging.markers': 'REGISTRIES'
+			properties 'forge.logging.markers': ''
 			properties 'forge.logging.console.level': 'debug'
 			properties 'terminal.ansi': 'true'
 			workingDirectory project.file('run').canonicalPath
@@ -32,12 +33,12 @@ repositories {
 		name = "CurseMaven"
 		url "https://www.cursemaven.com"
 	}
-	mavenCentral()
 }
 
 dependencies {
 	minecraft "net.minecraftforge:forge:${project.mcVersion}-${project.forgeVersion}"
-	compile 'curse.maven:iceberg-520110:3447679'
+	compileOnly 'curse.maven:iceberg-520110:3491123'
+	runtimeOnly 'curse.maven:iceberg-520110:3491123'
 }
 
 jar {
