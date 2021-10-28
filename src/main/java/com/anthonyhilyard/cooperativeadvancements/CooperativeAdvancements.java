@@ -3,44 +3,46 @@ package com.anthonyhilyard.cooperativeadvancements;
 import java.util.Collection;
 import java.util.List;
 
-import com.anthonyhilyard.iceberg.events.CriterionEvent;
+import com.anthonyhilyard.iceberg.events.CriterionCallback;
 
 import net.minecraft.advancements.Advancement;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.eventbus.api.Event.Result;
-import net.minecraftforge.fml.IExtensionPoint;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fmlserverevents.FMLServerAboutToStartEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 
-@Mod("cooperativeadvancements")
-public class CooperativeAdvancements
+public class CooperativeAdvancements implements ModInitializer
 {
+	public static final String MODID = "cooperativeadvancements";
+
 	@SuppressWarnings("unused")
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static MinecraftServer SERVER;
-	public static IEventBus MOD_EVENT_BUS;
 
-	public CooperativeAdvancements()
+	@Override
+	public void onInitialize()
 	{
-		// Register ourselves for server and other game events we are interested in.
-		MinecraftForge.EVENT_BUS.register(this);
-		ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> "ANY", (remote, isServer) -> true));
+		CooperativeAdvancementsConfig.init();
+
+		ServerLifecycleEvents.SERVER_STARTING.register(CooperativeAdvancements::onServerAboutToStart);
+		if (CooperativeAdvancementsConfig.INSTANCE.enabled)
+		{
+			ServerPlayConnectionEvents.JOIN.register(CooperativeAdvancements::onPlayerLogin);
+			CriterionCallback.EVENT.register(CooperativeAdvancements::onCriterion);
+		}
 	}
 
-	@SubscribeEvent
-	public void onServerAboutToStart(FMLServerAboutToStartEvent event)
+	public static void onServerAboutToStart(MinecraftServer server)
 	{
-		SERVER = event.getServer();
+		SERVER = server;
 	}
 
 	/**
@@ -75,49 +77,38 @@ public class CooperativeAdvancements
 		}
 	}
 
-
-	@Mod.EventBusSubscriber(bus=Mod.EventBusSubscriber.Bus.FORGE)
-	public static class AdvancementEvents
+	/**
+	 * Tries to grant a criterion for an advancement to all players whenever a player gains a new one.
+	 */
+	public static void onCriterion(Player player, Advancement advancement, String criterionKey)
 	{
-		/**
-		 * Tries to grant a criterion for an advancement to all players whenever a player gains a new one.
-		 */
-		@SubscribeEvent
-		public static void onCriterion(final CriterionEvent event)
-		{
-			List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
-			Advancement advancement = event.getAdvancement();
-			String criterion = event.getCriterionKey();
+		List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
 
-			for (ServerPlayer player : currentPlayers)
+		for (ServerPlayer serverPlayer : currentPlayers)
+		{
+			if (player != serverPlayer)
 			{
-				if (event.getPlayer() != player)
-				{
-					player.getAdvancements().award(advancement, criterion);
-				}
+				serverPlayer.getAdvancements().award(advancement, criterionKey);
 			}
-			event.setResult(Result.ALLOW);
 		}
+	}
 
-		/**
-		 * Synchronizes advancements of all players whenever a new one logs in.
-		 * @param event The PlayerLoggedInEvent.
-		 */
-		@SubscribeEvent
-		public static void onPlayerLogIn(final PlayerLoggedInEvent event)
+	/**
+	 * Synchronizes advancements of all players whenever a new one logs in.
+	 * @param event The PlayerLoggedInEvent.
+	 */
+	public static void onPlayerLogin(ServerGamePacketListenerImpl handler, PacketSender sender, MinecraftServer server)
+	{
+		List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
+		ServerPlayer newPlayer = handler.player;
+
+		// Loop through all the currently-connected players and synchronize their advancements.
+		for (ServerPlayer player : currentPlayers)
 		{
-			List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
-			ServerPlayer newPlayer = (ServerPlayer)event.getPlayer();
-
-			// Loop through all the currently-connected players and synchronize their advancements.
-			for (ServerPlayer player : currentPlayers)
+			if (newPlayer != player)
 			{
-				if (newPlayer != player)
-				{
-					syncCriteria(newPlayer, player);
-				}
+				syncCriteria(newPlayer, player);
 			}
-			event.setResult(Result.ALLOW);
 		}
 	}
 }
