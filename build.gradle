@@ -11,7 +11,7 @@ buildscript {
 apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 
-archivesBaseName = name + '-' + project.mcVersion
+archivesBaseName = project.name + '-' + project.mcVersion
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(16)
 

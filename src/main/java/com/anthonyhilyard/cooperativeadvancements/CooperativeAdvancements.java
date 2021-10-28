@@ -17,6 +17,7 @@ import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fmlserverevents.FMLServerAboutToStartEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.config.ModConfig;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,6 +35,7 @@ public class CooperativeAdvancements
 	{
 		// Register ourselves for server and other game events we are interested in.
 		MinecraftForge.EVENT_BUS.register(this);
+		ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, CooperativeAdvancementsConfig.SPEC);
 		ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> "ANY", (remote, isServer) -> true));
 	}
 
@@ -85,18 +87,25 @@ public class CooperativeAdvancements
 		@SubscribeEvent
 		public static void onCriterion(final CriterionEvent event)
 		{
-			List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
-			Advancement advancement = event.getAdvancement();
-			String criterion = event.getCriterionKey();
-
-			for (ServerPlayer player : currentPlayers)
+			if (!CooperativeAdvancementsConfig.INSTANCE.enabled.get())
 			{
-				if (event.getPlayer() != player)
-				{
-					player.getAdvancements().award(advancement, criterion);
-				}
+				event.setResult(Result.DENY);
 			}
-			event.setResult(Result.ALLOW);
+			else
+			{
+				List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
+				Advancement advancement = event.getAdvancement();
+				String criterion = event.getCriterionKey();
+
+				for (ServerPlayer player : currentPlayers)
+				{
+					if (event.getPlayer() != player)
+					{
+						player.getAdvancements().award(advancement, criterion);
+					}
+				}
+				event.setResult(Result.ALLOW);
+			}
 		}
 
 		/**
@@ -106,18 +115,25 @@ public class CooperativeAdvancements
 		@SubscribeEvent
 		public static void onPlayerLogIn(final PlayerLoggedInEvent event)
 		{
-			List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
-			ServerPlayer newPlayer = (ServerPlayer)event.getPlayer();
-
-			// Loop through all the currently-connected players and synchronize their advancements.
-			for (ServerPlayer player : currentPlayers)
+			if (!CooperativeAdvancementsConfig.INSTANCE.enabled.get())
 			{
-				if (newPlayer != player)
-				{
-					syncCriteria(newPlayer, player);
-				}
+				event.setResult(Result.DENY);
 			}
-			event.setResult(Result.ALLOW);
+			else
+			{
+				List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
+				ServerPlayer newPlayer = (ServerPlayer)event.getPlayer();
+
+				// Loop through all the currently-connected players and synchronize their advancements.
+				for (ServerPlayer player : currentPlayers)
+				{
+					if (newPlayer != player)
+					{
+						syncCriteria(newPlayer, player);
+					}
+				}
+				event.setResult(Result.ALLOW);
+			}
 		}
 	}
 }
