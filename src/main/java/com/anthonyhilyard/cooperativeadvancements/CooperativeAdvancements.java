@@ -6,6 +6,7 @@ import java.util.List;
 import com.anthonyhilyard.iceberg.events.CriterionEvent;
 
 import net.minecraft.advancements.Advancement;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
@@ -29,7 +30,8 @@ public class CooperativeAdvancements
 	@SuppressWarnings("unused")
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static MinecraftServer SERVER;
-	public static IEventBus MOD_EVENT_BUS;
+
+	private static boolean skipCriterionEvent = false;
 
 	public CooperativeAdvancements()
 	{
@@ -63,6 +65,7 @@ public class CooperativeAdvancements
 				List<String> firstCompleted = (List<String>) first.getAdvancements().getOrStartProgress(advancement).getCompletedCriteria();
 				List<String> secondCompleted = (List<String>) second.getAdvancements().getOrStartProgress(advancement).getCompletedCriteria();
 
+				skipCriterionEvent = true;
 				// If the first player has completed this criteria and the second hasn't, grant it to the second.
 				if (firstCompleted.contains(criterion) && !secondCompleted.contains(criterion))
 				{
@@ -73,6 +76,7 @@ public class CooperativeAdvancements
 				{
 					first.getAdvancements().award(advancement, criterion);
 				}
+				skipCriterionEvent = false;
 			}
 		}
 	}
@@ -87,6 +91,11 @@ public class CooperativeAdvancements
 		@SubscribeEvent
 		public static void onCriterion(final CriterionEvent event)
 		{
+			if (skipCriterionEvent)
+			{
+				return;
+			}
+
 			if (!CooperativeAdvancementsConfig.INSTANCE.enabled.get())
 			{
 				event.setResult(Result.DENY);
@@ -96,12 +105,15 @@ public class CooperativeAdvancements
 				List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
 				Advancement advancement = event.getAdvancement();
 				String criterion = event.getCriterionKey();
+				Player player = event.getPlayer();
 
-				for (ServerPlayer player : currentPlayers)
+				for (ServerPlayer serverPlayer : currentPlayers)
 				{
-					if (event.getPlayer() != player)
+					if (player != serverPlayer)
 					{
-						player.getAdvancements().award(advancement, criterion);
+						skipCriterionEvent = true;
+						serverPlayer.getAdvancements().award(advancement, criterion);
+						skipCriterionEvent = false;
 					}
 				}
 				event.setResult(Result.ALLOW);
