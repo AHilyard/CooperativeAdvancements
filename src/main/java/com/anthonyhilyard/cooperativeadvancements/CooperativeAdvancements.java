@@ -27,6 +27,8 @@ public class CooperativeAdvancements implements ModInitializer
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static MinecraftServer SERVER;
 
+	private static boolean skipCriterionEvent = false;
+
 	@Override
 	public void onInitialize()
 	{
@@ -63,6 +65,7 @@ public class CooperativeAdvancements implements ModInitializer
 				List<String> firstCompleted = (List<String>) first.getAdvancements().getOrStartProgress(advancement).getCompletedCriteria();
 				List<String> secondCompleted = (List<String>) second.getAdvancements().getOrStartProgress(advancement).getCompletedCriteria();
 
+				skipCriterionEvent = true;
 				// If the first player has completed this criteria and the second hasn't, grant it to the second.
 				if (firstCompleted.contains(criterion) && !secondCompleted.contains(criterion))
 				{
@@ -73,6 +76,7 @@ public class CooperativeAdvancements implements ModInitializer
 				{
 					first.getAdvancements().award(advancement, criterion);
 				}
+				skipCriterionEvent = false;
 			}
 		}
 	}
@@ -82,13 +86,20 @@ public class CooperativeAdvancements implements ModInitializer
 	 */
 	public static void onCriterion(Player player, Advancement advancement, String criterionKey)
 	{
+		if (skipCriterionEvent)
+		{
+			return;
+		}
+
 		List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
 
 		for (ServerPlayer serverPlayer : currentPlayers)
 		{
 			if (player != serverPlayer)
 			{
+				skipCriterionEvent = true;
 				serverPlayer.getAdvancements().award(advancement, criterionKey);
+				skipCriterionEvent = false;
 			}
 		}
 	}
