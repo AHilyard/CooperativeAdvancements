@@ -19,6 +19,9 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 
+import net.minecraftforge.api.ModLoadingContext;
+import net.minecraftforge.fml.config.ModConfig;
+
 public class CooperativeAdvancements implements ModInitializer
 {
 	public static final String MODID = "cooperativeadvancements";
@@ -32,10 +35,10 @@ public class CooperativeAdvancements implements ModInitializer
 	@Override
 	public void onInitialize()
 	{
-		CooperativeAdvancementsConfig.init();
+		ModLoadingContext.registerConfig(MODID, ModConfig.Type.COMMON, CooperativeAdvancementsConfig.SPEC);
 
 		ServerLifecycleEvents.SERVER_STARTING.register(CooperativeAdvancements::onServerAboutToStart);
-		if (CooperativeAdvancementsConfig.INSTANCE.enabled)
+		if (CooperativeAdvancementsConfig.INSTANCE.enabled.get())
 		{
 			ServerPlayConnectionEvents.JOIN.register(CooperativeAdvancements::onPlayerLogin);
 			CriterionCallback.EVENT.register(CooperativeAdvancements::onCriterion);

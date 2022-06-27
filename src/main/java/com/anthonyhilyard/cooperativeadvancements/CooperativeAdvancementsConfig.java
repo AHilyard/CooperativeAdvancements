@@ -1,24 +1,32 @@
 package com.anthonyhilyard.cooperativeadvancements;
 
-import me.shedaniel.autoconfig.AutoConfig;
-import me.shedaniel.autoconfig.ConfigData;
-import me.shedaniel.autoconfig.annotation.Config;
-import me.shedaniel.autoconfig.annotation.ConfigEntry;
-import me.shedaniel.autoconfig.serializer.JanksonConfigSerializer;
-import me.shedaniel.cloth.clothconfig.shadowed.blue.endless.jankson.Comment;
+import org.apache.commons.lang3.tuple.Pair;
 
-@Config(name = CooperativeAdvancements.MODID)
-public class CooperativeAdvancementsConfig implements ConfigData
+import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.common.ForgeConfigSpec.BooleanValue;
+
+import com.electronwill.nightconfig.core.Config;
+
+public class CooperativeAdvancementsConfig
 {
-	@ConfigEntry.Gui.Excluded
-	public static CooperativeAdvancementsConfig INSTANCE;
-
-	public static void init()
+	public static final ForgeConfigSpec SPEC;
+	public static final CooperativeAdvancementsConfig INSTANCE;
+	static
 	{
-		AutoConfig.register(CooperativeAdvancementsConfig.class, JanksonConfigSerializer::new);
-		INSTANCE = AutoConfig.getConfigHolder(CooperativeAdvancementsConfig.class).getConfig();
+		Config.setInsertionOrderPreserved(true);
+		Pair<CooperativeAdvancementsConfig, ForgeConfigSpec> specPair = new ForgeConfigSpec.Builder().configure(CooperativeAdvancementsConfig::new);
+		SPEC = specPair.getRight();
+		INSTANCE = specPair.getLeft();
 	}
 
-	@Comment("If advancements should be synchronized between players.  Recommended when playing with friends!")
-	public boolean enabled = true;
+	public final BooleanValue enabled;
+
+	public CooperativeAdvancementsConfig(ForgeConfigSpec.Builder build)
+	{
+		build.comment("Client Configuration").push("client").push("options");
+
+		enabled = build.comment(" If advancements should be synchronized between players.  Recommended when playing with friends!").define("enabled", true);
+
+		build.pop().pop();
+	}
 }
