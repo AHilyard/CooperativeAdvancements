@@ -100,6 +100,14 @@ public class CooperativeAdvancements implements ModInitializer
 		{
 			if (player != serverPlayer)
 			{
+				// Only synchronize between team members if the config option is enabled.
+				if (CooperativeAdvancementsConfig.INSTANCE.perTeam.get() &&
+					player.getTeam() != null && serverPlayer.getTeam() != null &&
+					player.getTeam().getName().equals(serverPlayer.getTeam().getName()))
+				{
+					continue;
+				}
+
 				skipCriterionEvent = true;
 				serverPlayer.getAdvancements().award(advancement, criterionKey);
 				skipCriterionEvent = false;
@@ -114,14 +122,22 @@ public class CooperativeAdvancements implements ModInitializer
 	public static void onPlayerLogin(ServerGamePacketListenerImpl handler, PacketSender sender, MinecraftServer server)
 	{
 		List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
-		ServerPlayer newPlayer = handler.player;
+		ServerPlayer player = handler.player;
 
 		// Loop through all the currently-connected players and synchronize their advancements.
-		for (ServerPlayer player : currentPlayers)
+		for (ServerPlayer serverPlayer : currentPlayers)
 		{
-			if (newPlayer != player)
+			if (player != serverPlayer)
 			{
-				syncCriteria(newPlayer, player);
+				// Only synchronize between team members if the config option is enabled.
+				if (CooperativeAdvancementsConfig.INSTANCE.perTeam.get() &&
+					player.getTeam() != null && serverPlayer.getTeam() != null &&
+					player.getTeam().getName().equals(serverPlayer.getTeam().getName()))
+				{
+					continue;
+				}
+
+				syncCriteria(player, serverPlayer);
 			}
 		}
 	}

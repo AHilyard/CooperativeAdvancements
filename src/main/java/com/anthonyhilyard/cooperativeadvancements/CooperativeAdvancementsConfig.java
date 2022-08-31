@@ -20,13 +20,15 @@ public class CooperativeAdvancementsConfig
 	}
 
 	public final BooleanValue enabled;
+	public final BooleanValue perTeam;
 
 	public CooperativeAdvancementsConfig(ForgeConfigSpec.Builder build)
 	{
-		build.comment("Client Configuration").push("client").push("options");
+		build.comment("Common Configuration").push("options");
 
-		enabled = build.comment(" If advancements should be synchronized between players.  Recommended when playing with friends!").define("enabled", true);
+		enabled = build.comment(" Enables the entire mod (defaults to true).  Useful option for modpack makers.").define("enabled", true);
+		perTeam = build.comment(" Set to true to only share advancements between members of the same team.").define("per_team", false);
 
-		build.pop().pop();
+		build.pop();
 	}
 }
