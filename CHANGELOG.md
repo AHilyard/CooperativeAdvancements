@@ -1,5 +1,8 @@
 # Changelog
 
+### 1.3.0
+- Added per-team advancement syncing option.
+
 ### 1.2.3
 - Fixed a bug that caused server crashes with more than 2 players.
 

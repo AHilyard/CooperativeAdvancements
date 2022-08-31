@@ -19,6 +19,9 @@ public class CooperativeAdvancementsConfig implements ConfigData
 		INSTANCE = AutoConfig.getConfigHolder(CooperativeAdvancementsConfig.class).getConfig();
 	}
 
-	@Comment("If advancements should be synchronized between players.  Recommended when playing with friends!")
+	@Comment("Enables the entire mod (defaults to true). Useful option for modpack makers.")
 	public boolean enabled = true;
+
+	@Comment("Set to true to only share advancements between members of the same team.")
+	public boolean perTeam = false;
 }
