@@ -15,7 +15,7 @@ description='''A simple mod to share advancements between all players on a serve
 [[dependencies.cooperativeadvancements]]
 	modId="forge"
 	mandatory=true
-	versionRange="[41,)"
+	versionRange="[41.1,)"
 	ordering="NONE"
 	side="SERVER"
 

@@ -104,12 +104,19 @@ public class CooperativeAdvancements
 				List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
 				Advancement advancement = event.getAdvancement();
 				String criterion = event.getCriterionKey();
-				Player player = event.getPlayer();
+				Player player = event.getEntity();
 
 				for (ServerPlayer serverPlayer : currentPlayers)
 				{
 					if (player != serverPlayer)
 					{
+						// Only synchronize between team members if the config option is enabled.
+						if (CooperativeAdvancementsConfig.INSTANCE.perTeam.get() &&
+							player.getTeam() != null && serverPlayer.getTeam() != null &&
+							player.getTeam().getName().equals(serverPlayer.getTeam().getName()))
+						{
+							continue;
+						}
 						skipCriterionEvent = true;
 						serverPlayer.getAdvancements().award(advancement, criterion);
 						skipCriterionEvent = false;
@@ -133,14 +140,22 @@ public class CooperativeAdvancements
 			else
 			{
 				List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
-				ServerPlayer newPlayer = (ServerPlayer)event.getPlayer();
+				ServerPlayer player = (ServerPlayer)event.getEntity();
 
 				// Loop through all the currently-connected players and synchronize their advancements.
-				for (ServerPlayer player : currentPlayers)
+				for (ServerPlayer serverPlayer : currentPlayers)
 				{
-					if (newPlayer != player)
+					if (player != serverPlayer)
 					{
-						syncCriteria(newPlayer, player);
+						// Only synchronize between team members if the config option is enabled.
+						if (CooperativeAdvancementsConfig.INSTANCE.perTeam.get() &&
+							player.getTeam() != null && serverPlayer.getTeam() != null &&
+							player.getTeam().getName().equals(serverPlayer.getTeam().getName()))
+						{
+							continue;
+						}
+
+						syncCriteria(player, serverPlayer);
 					}
 				}
 				event.setResult(Result.ALLOW);
