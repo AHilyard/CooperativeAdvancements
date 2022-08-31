@@ -17,7 +17,6 @@ import net.minecraftforge.fml.IExtensionPoint;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.event.server.ServerAboutToStartEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.config.ModConfig;
 
 import org.apache.logging.log4j.LogManager;
@@ -111,6 +110,14 @@ public class CooperativeAdvancements
 				{
 					if (player != serverPlayer)
 					{
+						// Only synchronize between team members if the config option is enabled.
+						if (CooperativeAdvancementsConfig.INSTANCE.perTeam.get() &&
+							player.getTeam() != null && serverPlayer.getTeam() != null &&
+							player.getTeam().getName().equals(serverPlayer.getTeam().getName()))
+						{
+							continue;
+						}
+
 						skipCriterionEvent = true;
 						serverPlayer.getAdvancements().award(advancement, criterion);
 						skipCriterionEvent = false;
@@ -134,14 +141,22 @@ public class CooperativeAdvancements
 			else
 			{
 				List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
-				ServerPlayer newPlayer = (ServerPlayer)event.getPlayer();
+				ServerPlayer player = (ServerPlayer)event.getPlayer();
 
 				// Loop through all the currently-connected players and synchronize their advancements.
-				for (ServerPlayer player : currentPlayers)
+				for (ServerPlayer serverPlayer : currentPlayers)
 				{
-					if (newPlayer != player)
+					if (player != serverPlayer)
 					{
-						syncCriteria(newPlayer, player);
+						// Only synchronize between team members if the config option is enabled.
+						if (CooperativeAdvancementsConfig.INSTANCE.perTeam.get() &&
+							player.getTeam() != null && serverPlayer.getTeam() != null &&
+							player.getTeam().getName().equals(serverPlayer.getTeam().getName()))
+						{
+							continue;
+						}
+
+						syncCriteria(player, serverPlayer);
 					}
 				}
 				event.setResult(Result.ALLOW);
