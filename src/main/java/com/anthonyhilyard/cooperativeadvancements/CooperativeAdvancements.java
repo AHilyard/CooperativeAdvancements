@@ -6,6 +6,7 @@ import java.util.List;
 import com.anthonyhilyard.iceberg.events.CriterionEvent;
 
 import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
@@ -53,27 +54,28 @@ public class CooperativeAdvancements
 	 */
 	public static void syncCriteria(ServerPlayer first, ServerPlayer second)
 	{
-		Collection<Advancement> allAdvancements = SERVER.getAdvancements().getAllAdvancements();
+		Collection<AdvancementHolder> allAdvancements = SERVER.getAdvancements().getAllAdvancements();
 
 		// Loop through every possible advancement.
-		for (Advancement advancement : allAdvancements)
+		for (AdvancementHolder advancementHolder : allAdvancements)
 		{
-			for (String criterion : advancement.getCriteria().keySet())
+			Advancement advancement = advancementHolder.value();
+			for (String criterion : advancement.criteria().keySet())
 			{
 				// We know these iterables are actually lists, so just cast them.
-				List<String> firstCompleted = (List<String>) first.getAdvancements().getOrStartProgress(advancement).getCompletedCriteria();
-				List<String> secondCompleted = (List<String>) second.getAdvancements().getOrStartProgress(advancement).getCompletedCriteria();
+				List<String> firstCompleted = (List<String>) first.getAdvancements().getOrStartProgress(advancementHolder).getCompletedCriteria();
+				List<String> secondCompleted = (List<String>) second.getAdvancements().getOrStartProgress(advancementHolder).getCompletedCriteria();
 
 				skipCriterionEvent = true;
 				// If the first player has completed this criteria and the second hasn't, grant it to the second.
 				if (firstCompleted.contains(criterion) && !secondCompleted.contains(criterion))
 				{
-					second.getAdvancements().award(advancement, criterion);
+					second.getAdvancements().award(advancementHolder, criterion);
 				}
 				// Conversely, if the first hasn't completed it and the second has, grant it to the first.
 				else if (!firstCompleted.contains(criterion) && secondCompleted.contains(criterion))
 				{
-					first.getAdvancements().award(advancement, criterion);
+					first.getAdvancements().award(advancementHolder, criterion);
 				}
 				skipCriterionEvent = false;
 			}
@@ -102,7 +104,7 @@ public class CooperativeAdvancements
 			else
 			{
 				List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
-				Advancement advancement = event.getAdvancement();
+				AdvancementHolder advancementHolder = event.getAdvancementHolder();
 				String criterion = event.getCriterionKey();
 				Player player = event.getEntity();
 
@@ -118,7 +120,7 @@ public class CooperativeAdvancements
 							continue;
 						}
 						skipCriterionEvent = true;
-						serverPlayer.getAdvancements().award(advancement, criterion);
+						serverPlayer.getAdvancements().award(advancementHolder, criterion);
 						skipCriterionEvent = false;
 					}
 				}

@@ -54,7 +54,7 @@ repositories {
 
 dependencies {
 	minecraft "net.minecraftforge:forge:${project.mcVersion}-${project.forgeVersion}"
-	implementation fg.deobf('curse.maven:iceberg-520110:3832980')
+	implementation files('libs/Iceberg-1.20.2-forge-1.1.16.jar')
 }
 
 jar {
