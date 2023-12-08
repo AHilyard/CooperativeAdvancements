@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '1.0-SNAPSHOT'
+	id 'fabric-loom' version '0.12-SNAPSHOT'
 	id 'maven-publish'
 }
 
@@ -14,7 +14,7 @@ sourceSets.main.resources.srcDirs += 'resources'
 repositories {
 	maven {
 		name = "CurseMaven"
-		url "https://www.cursemaven.com"
+		url = "https://www.cursemaven.com"
 	}
 	maven {
 		name = "Fuzs Mod Resources"
@@ -27,9 +27,10 @@ dependencies {
 	mappings loom.officialMojangMappings()
 	modImplementation "net.fabricmc:fabric-loader:${project.loaderVersion}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabricVersion}"
-	modImplementation "net.minecraftforge:forgeconfigapiport-fabric:${forgeConfigApiVersion}"
+	modImplementation "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forgeConfigApiVersion}"
 
-	modImplementation "curse.maven:iceberg-539382:3832794"
+	//modImplementation "curse.maven:iceberg-539382:3832794"
+	modImplementation files("libs/Iceberg-1.20.2-fabric-1.1.16.jar")
 }
 
 processResources {

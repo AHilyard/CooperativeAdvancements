@@ -7,6 +7,7 @@ import net.minecraftforge.common.ForgeConfigSpec.BooleanValue;
 
 import com.electronwill.nightconfig.core.Config;
 
+@SuppressWarnings("deprecation")
 public class CooperativeAdvancementsConfig
 {
 	public static final ForgeConfigSpec SPEC;

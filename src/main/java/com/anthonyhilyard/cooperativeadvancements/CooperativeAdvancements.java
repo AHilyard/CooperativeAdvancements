@@ -6,6 +6,7 @@ import java.util.List;
 import com.anthonyhilyard.iceberg.events.CriterionCallback;
 
 import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.entity.player.Player;
@@ -19,9 +20,10 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 
-import net.minecraftforge.api.ModLoadingContext;
+import fuzs.forgeconfigapiport.api.config.v2.ForgeConfigRegistry;
 import net.minecraftforge.fml.config.ModConfig;
 
+@SuppressWarnings("deprecation")
 public class CooperativeAdvancements implements ModInitializer
 {
 	public static final String MODID = "cooperativeadvancements";
@@ -35,7 +37,7 @@ public class CooperativeAdvancements implements ModInitializer
 	@Override
 	public void onInitialize()
 	{
-		ModLoadingContext.registerConfig(MODID, ModConfig.Type.COMMON, CooperativeAdvancementsConfig.SPEC);
+		ForgeConfigRegistry.INSTANCE.register(MODID, ModConfig.Type.COMMON, CooperativeAdvancementsConfig.SPEC);
 
 		ServerLifecycleEvents.SERVER_STARTING.register(CooperativeAdvancements::onServerAboutToStart);
 		if (CooperativeAdvancementsConfig.INSTANCE.enabled.get())
@@ -57,27 +59,28 @@ public class CooperativeAdvancements implements ModInitializer
 	 */
 	public static void syncCriteria(ServerPlayer first, ServerPlayer second)
 	{
-		Collection<Advancement> allAdvancements = SERVER.getAdvancements().getAllAdvancements();
+		Collection<AdvancementHolder> allAdvancements = SERVER.getAdvancements().getAllAdvancements();
 
 		// Loop through every possible advancement.
-		for (Advancement advancement : allAdvancements)
+		for (AdvancementHolder advancementHolder : allAdvancements)
 		{
-			for (String criterion : advancement.getCriteria().keySet())
+			Advancement advancement = advancementHolder.value();
+			for (String criterion : advancement.criteria().keySet())
 			{
 				// We know these iterables are actually lists, so just cast them.
-				List<String> firstCompleted = (List<String>) first.getAdvancements().getOrStartProgress(advancement).getCompletedCriteria();
-				List<String> secondCompleted = (List<String>) second.getAdvancements().getOrStartProgress(advancement).getCompletedCriteria();
+				List<String> firstCompleted = (List<String>) first.getAdvancements().getOrStartProgress(advancementHolder).getCompletedCriteria();
+				List<String> secondCompleted = (List<String>) second.getAdvancements().getOrStartProgress(advancementHolder).getCompletedCriteria();
 
 				skipCriterionEvent = true;
 				// If the first player has completed this criteria and the second hasn't, grant it to the second.
 				if (firstCompleted.contains(criterion) && !secondCompleted.contains(criterion))
 				{
-					second.getAdvancements().award(advancement, criterion);
+					second.getAdvancements().award(advancementHolder, criterion);
 				}
 				// Conversely, if the first hasn't completed it and the second has, grant it to the first.
 				else if (!firstCompleted.contains(criterion) && secondCompleted.contains(criterion))
 				{
-					first.getAdvancements().award(advancement, criterion);
+					first.getAdvancements().award(advancementHolder, criterion);
 				}
 				skipCriterionEvent = false;
 			}
@@ -87,30 +90,37 @@ public class CooperativeAdvancements implements ModInitializer
 	/**
 	 * Tries to grant a criterion for an advancement to all players whenever a player gains a new one.
 	 */
-	public static void onCriterion(Player player, Advancement advancement, String criterionKey)
+	public static void onCriterion(Player player, AdvancementHolder advancementHolder, String criterionKey)
 	{
 		if (skipCriterionEvent)
 		{
 			return;
 		}
 
-		List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
-
-		for (ServerPlayer serverPlayer : currentPlayers)
+		if (!CooperativeAdvancementsConfig.INSTANCE.enabled.get())
 		{
-			if (player != serverPlayer)
-			{
-				// Only synchronize between team members if the config option is enabled.
-				if (CooperativeAdvancementsConfig.INSTANCE.perTeam.get() &&
-					player.getTeam() != null && serverPlayer.getTeam() != null &&
-					player.getTeam().getName().equals(serverPlayer.getTeam().getName()))
-				{
-					continue;
-				}
+			return;
+		}
+		else
+		{
+			List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
 
-				skipCriterionEvent = true;
-				serverPlayer.getAdvancements().award(advancement, criterionKey);
-				skipCriterionEvent = false;
+			for (ServerPlayer serverPlayer : currentPlayers)
+			{
+				if (player != serverPlayer)
+				{
+					// Only synchronize between team members if the config option is enabled.
+					if (CooperativeAdvancementsConfig.INSTANCE.perTeam.get() &&
+						player.getTeam() != null && serverPlayer.getTeam() != null &&
+						player.getTeam().getName().equals(serverPlayer.getTeam().getName()))
+					{
+						continue;
+					}
+
+					skipCriterionEvent = true;
+					serverPlayer.getAdvancements().award(advancementHolder, criterionKey);
+					skipCriterionEvent = false;
+				}
 			}
 		}
 	}
@@ -121,23 +131,30 @@ public class CooperativeAdvancements implements ModInitializer
 	 */
 	public static void onPlayerLogin(ServerGamePacketListenerImpl handler, PacketSender sender, MinecraftServer server)
 	{
-		List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
-		ServerPlayer player = handler.player;
-
-		// Loop through all the currently-connected players and synchronize their advancements.
-		for (ServerPlayer serverPlayer : currentPlayers)
+		if (!CooperativeAdvancementsConfig.INSTANCE.enabled.get())
 		{
-			if (player != serverPlayer)
-			{
-				// Only synchronize between team members if the config option is enabled.
-				if (CooperativeAdvancementsConfig.INSTANCE.perTeam.get() &&
-					player.getTeam() != null && serverPlayer.getTeam() != null &&
-					player.getTeam().getName().equals(serverPlayer.getTeam().getName()))
-				{
-					continue;
-				}
+			return;
+		}
+		else
+		{
+			List<ServerPlayer> currentPlayers = SERVER.getPlayerList().getPlayers();
+			ServerPlayer player = handler.player;
 
-				syncCriteria(player, serverPlayer);
+			// Loop through all the currently-connected players and synchronize their advancements.
+			for (ServerPlayer serverPlayer : currentPlayers)
+			{
+				if (player != serverPlayer)
+				{
+					// Only synchronize between team members if the config option is enabled.
+					if (CooperativeAdvancementsConfig.INSTANCE.perTeam.get() &&
+						player.getTeam() != null && serverPlayer.getTeam() != null &&
+						player.getTeam().getName().equals(serverPlayer.getTeam().getName()))
+					{
+						continue;
+					}
+
+					syncCriteria(player, serverPlayer);
+				}
 			}
 		}
 	}
