@@ -1,0 +1,34 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="CC BY-NC-ND 4.0"
+
+[[mods]]
+modId="cooperativeadvancements"
+version="${version}"
+displayName="Cooperative Advancements"
+displayURL="https://anthonyhilyard.com/"
+updateJSONURL="https://mc-update-check.anthonyhilyard.com/352568"
+logoFile="icon.png"
+authors="Grend"
+description='''A simple mod to share advancements between all players on a server.'''
+
+[[dependencies.cooperativeadvancements]]
+	modId="neoforge"
+	type="required"
+	versionRange="[21,)"
+	ordering="NONE"
+	side="BOTH"
+
+[[dependencies.cooperativeadvancements]]
+	modId="minecraft"
+	type="required"
+	versionRange="[1.21.0,)"
+	ordering="NONE"
+	side="BOTH"
+
+[[dependencies.cooperativeadvancements]]
+	modId="iceberg"
+	type="required"
+	versionRange="[1.1.24,)"
+	ordering="NONE"
+	side="BOTH"

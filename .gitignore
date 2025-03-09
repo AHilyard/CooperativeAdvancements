@@ -1,0 +1,19 @@
+# vscode
+bin
+output
+*.launch
+**/.settings
+**/.metadata
+**/.classpath
+.project
+.vscode
+
+# gradle
+**/build
+**/.gradle
+
+# other
+run
+logs
+libs
+.architectury-transformer

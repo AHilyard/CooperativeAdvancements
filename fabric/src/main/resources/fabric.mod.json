@@ -1,0 +1,48 @@
+{
+	"schemaVersion": 1,
+	"id": "cooperativeadvancements",
+	"version": "${version}",
+
+	"name": "Cooperative Advancements",
+	"description": "A simple mod to share advancements between all players on a server.",
+	"authors": [ "Grend" ],
+	"contact": {
+		"homepage": "https://anthonyhilyard.com/",
+		"sources": "https://github.com/AHilyard/CooperativeAdvancements",
+		"discord": "https://discord.gg/S5NQjbXPnb"
+	},
+
+	"license": "CC BY-NC-ND 4.0",
+	"icon": "icon.png",
+
+	"environment": "*",
+
+	"entrypoints": {
+		"main": [
+			"com.anthonyhilyard.cooperativeadvancements.fabric.CooperativeAdvancementsFabric"
+		]
+	 },
+
+	"depends": {
+		"fabricloader": ">=0.15.0",
+		"fabric": "*",
+		"minecraft": ">=1.21",
+		"java": ">=17",
+		"iceberg": ">=1.1.24"
+	},
+	"suggests": {
+		"ftbteams": ">=2100.1.0"
+	},
+	"custom": {
+		"modupdater": {
+			"strategy": "curseforge",
+			"projectID": 541578,
+			"strict": false
+		},
+		"modmenu": {
+			"links": {
+				"modmenu.discord": "https://discord.gg/S5NQjbXPnb"
+			}
+		}
+	}
+}
